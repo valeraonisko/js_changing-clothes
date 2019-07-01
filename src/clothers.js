@@ -1,61 +1,73 @@
 'use strict';
 let clothers;
 
-function getClothersList() {
+function getClotherContainer(store) {
   const state = store.getState();
-  return state.clothers.reduce((sum, clother, i) => {
-    let line;
+  const container = document.createElement('div');
+  container.className = 'container';
+  state.clothers.forEach((clother, i) => {
     if (i === state.selectedIndex) {
       if (state.inEdit) {
-        line = `<input id="input" value="${clother}" onkeydown="inputHandler()">`;
+        const input = document.createElement('input');
+        input.id = "input";
+        input.setAttribute("value", `${clother}`);
+        input.addEventListener("keydown", inputHandler);
+        container.appendChild(input);
       } else {
-        line = `<li id="${i}">${clother}<button id="edit" onclick="editClickHandler()">Edit</button></li>`
+        const li = document.createElement('li');
+        li.id = `${i}`;
+        li.textContent = `${clother}`;
+        const btn = document.createElement('button');
+        btn.id = "edit";
+        btn.textContent = 'Edit';
+        btn.addEventListener("click", editClickHandler);
+        li.appendChild(btn);
+        container.appendChild(li);
       }
-
     } else {
-      if (state.inEdit) {
-        line = `<li id="${i}">${clother}</li>`;
-      } else {
-        line = `<li id="${i}" onclick="listClickHandler()">${clother}</li>`;
+      const li = document.createElement('li');
+      li.id = `${i}`;
+      li.textContent = `${clother}`;
+      if (!state.inEdit) {
+        li.addEventListener("click", listClickHandler, false);
       }
-
+      container.appendChild(li);
     }
-    return sum += line;
-  },'');
+  })
+  return container;
 }
 
-function listClickHandler(event) {
-  event = event|| window.event;
+function listClickHandler (event) {
   const id = +(event.target.id);
   if (!isNaN(id)) {
     store.dispatch(getSelectAction(id));
   }
 }
 
-function editClickHandler(event) {
+const editClickHandler = function (event) {
   store.dispatch(getEditAction());
 }
 
-function inputHandler(event) {
-  event = event|| window.event;
+const inputHandler = function (event) {
   if (event.key === 'Enter') {
     store.dispatch(getApplyAction(event.target.value));
   } else if (event.key === 'Escape') {
       store.dispatch(getCancelAction());
     }
 }
-function updateClothers() {
-    clothers.innerHTML = getClothersList();
+function updateClothers(store) {
+  if (clothers.firstChild) {
+    clothers.removeChild(clothers.firstChild);
+  }
+  clothers.appendChild(getClotherContainer(store));
 }
 
-function initClothers() {
-
+function initClothers(store) {
   clothers = document.getElementById('clothers');
 
+  store.subscribe(() => {
+    updateClothers(store);
+  });
 
-    store.subscribe(() => {
-        updateClothers();
-    });
-
-    updateClothers();
+  updateClothers(store);
 }
